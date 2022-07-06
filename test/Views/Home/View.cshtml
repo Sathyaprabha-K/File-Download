@@ -1,0 +1,13 @@
+﻿
+@{
+    ViewData["Title"] = "View";
+
+}
+
+<h1>
+    File has been created successfully in @ViewBag.path
+    <p>@Html.ActionLink("Click Here to Download","GetPdf", "Home", new { fileName = @ViewBag.path }, null)</p>
+
+  
+</h1>
+
