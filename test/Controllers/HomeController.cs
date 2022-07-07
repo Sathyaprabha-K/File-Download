@@ -1,6 +1,9 @@
-﻿using LoginForm.Model;
+﻿using test.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,47 +12,56 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using test.Models;
 
 namespace test.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+       // private readonly string _filePath;
+        FileOnFileSystemModel fileOnFileSystemModel = new FileOnFileSystemModel();
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, IConfiguration configuration)
         {
             _logger = logger;
+            fileOnFileSystemModel.FilePath = configuration["FileConfiguration:Filepath"];
+            fileOnFileSystemModel.FileType = "application/txt";
         }
         public IActionResult Index()
         {
             return View();
         }
-        [HttpPost]
-        public IActionResult Index(Login login)
-        {
 
-            string myFileName = String.Format("{0}-{1}.txt", DateTime.Now.ToString("yyyyMMddhhmmss"), "Output");
-            string path = Path.Combine(@"C:\Users\Public", myFileName);
-            ViewBag.path = path;
-            byte[] utf8bytesJson = JsonSerializer.SerializeToUtf8Bytes(login);
+        private async Task<FileOnFileSystemModel> Writedatatofile(Login login)
+        {
+            fileOnFileSystemModel.FileName = String.Format("{0}-{1}.txt", DateTime.Now.ToString("yyyyMMddhhmmss"), "Output");
+            fileOnFileSystemModel.Filenamewithpath = Path.Combine(fileOnFileSystemModel.FilePath, fileOnFileSystemModel.FileName);
+            ViewBag.path = fileOnFileSystemModel.Filenamewithpath;
+            TempData["file"] = fileOnFileSystemModel.FileName;
+            byte[] utf8bytesJson = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(login);
             string strResult = System.Text.Encoding.UTF8.GetString(utf8bytesJson);
-            using (StreamWriter sw = System.IO.File.CreateText(path))
-            {
-                sw.WriteLine(strResult);
+            using (StreamWriter sw = (System.IO.File.Exists(fileOnFileSystemModel.Filenamewithpath)) ? System.IO.File.AppendText(fileOnFileSystemModel.Filenamewithpath) : System.IO.File.CreateText(fileOnFileSystemModel.Filenamewithpath))
+
+            { 
+                await sw.WriteAsync(strResult);
             }
-
-
-            
-           
-           return View("View");
+            return fileOnFileSystemModel;
         }
-        public ActionResult GetPdf(string fileName)
+        [HttpPost]
+        public async Task<IActionResult> Index(Login login)
         {
-            var fs = System.IO.File.OpenRead(fileName);
-            return File(fs, "application/txt", fileName);
+              var fileName =await  Writedatatofile(login);
             
+            return View("View", fileName);
         }
+        
+        public async Task<FileResult> GetTxt(string fileName)
+        {//open the file and read content
+            var fs = System.IO.File.OpenRead(fileName);
+            await Task.Delay(3000);
+            return File(fs, fileOnFileSystemModel.FileType, TempData["file"].ToString());
+        }
+
         public IActionResult Privacy()
         {
             return View();

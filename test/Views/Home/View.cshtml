@@ -1,13 +1,15 @@
-﻿
+﻿@model test.Models.FileOnFileSystemModel
+
 @{
     ViewData["Title"] = "View";
 
 }
 
 <h1>
-    File has been created successfully in @ViewBag.path
-    <p>@Html.ActionLink("Click Here to Download","GetPdf", "Home", new { fileName = @ViewBag.path }, null)</p>
+    File has been created successfully in @Model.Filenamewithpath
+    <p>@Html.ActionLink("Click Here to Download", "GetTxt", "Home", new { fileName = @Model.Filenamewithpath }, null)</p>
 
   
+
 </h1>
 
